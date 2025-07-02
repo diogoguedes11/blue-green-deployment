@@ -13,7 +13,7 @@ When deploying a new version, you switch traffic from Blue to Green (or vice ver
 
 ## Architecture
 
-```mermaid
+```
 ┌─────────────────┐    ┌─────────────────┐
 │   Client        │────│   Nginx Proxy   │
 │   (Port 8080)   │    │   (Port 80)     │
@@ -68,7 +68,7 @@ This will start:
 
 - **Blue service**: Available at `http://localhost:3001`
 - **Green service**: Available at `http://localhost:3002`
-- **Nginx proxy**: Available at `http://localhost:8080` (routes to blue by default)
+- **Nginx proxy**: Available at `http://localhost:8080` (routes to green by default)
 
 ### 3. Test the Deployment
 

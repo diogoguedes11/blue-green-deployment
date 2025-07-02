@@ -1,0 +1,13 @@
+services:
+  blue:
+    image: blue-green-app:blue
+    ports:
+      - "3001:3000"
+    environment:
+      - APP_VERSION=v1
+  green:
+    image: blue-green-app:green
+    ports:
+      - "3002:3000"
+    environment:
+      - APP_VERSION=v2

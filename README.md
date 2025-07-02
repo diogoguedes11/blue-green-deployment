@@ -1,1 +1,2 @@
-# blue-green-deployment
+# Blue green deployment lab environment
+

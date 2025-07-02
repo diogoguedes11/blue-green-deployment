@@ -1,0 +1,66 @@
+# Load Balancing Configuration Examples
+# Rename this file to .conf to use any of these configurations
+
+# Option 1: Round Robin with Equal Weight (Default)
+upstream round-robin {
+    server blue:3000 max_fails=3 fail_timeout=30s;
+    server green:3000 max_fails=3 fail_timeout=30s;
+}
+
+# Option 2: Weighted Load Balancing (Blue gets 70% traffic)
+upstream weighted {
+    server blue:3000 weight=7 max_fails=3 fail_timeout=30s;
+    server green:3000 weight=3 max_fails=3 fail_timeout=30s;
+}
+
+# Option 3: Primary/Backup (Green only used if Blue fails)
+upstream primary-backup {
+    server blue:3000 max_fails=3 fail_timeout=30s;
+    server green:3000 backup;
+}
+
+# Option 4: IP Hash (Same client always goes to same server)
+upstream ip-hash {
+    ip_hash;
+    server blue:3000 max_fails=3 fail_timeout=30s;
+    server green:3000 max_fails=3 fail_timeout=30s;
+}
+
+# Option 5: Least Connections
+upstream least-conn {
+    least_conn;
+    server blue:3000 max_fails=3 fail_timeout=30s;
+    server green:3000 max_fails=3 fail_timeout=30s;
+}
+
+# Health Check Location
+server {
+    listen 80;
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+
+    location / {
+        proxy_pass http://primary-backup;  # Change this to any upstream above
+        
+        # Standard proxy headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeout settings
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+        
+        # Retry settings
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        proxy_next_upstream_tries 2;
+        proxy_next_upstream_timeout 10s;
+    }
+}

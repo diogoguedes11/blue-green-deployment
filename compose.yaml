@@ -1,3 +1,6 @@
+# Uses the same default network
+# We can curl inside nginx using blue:3001 or green:3002
+
 services:
   blue:
     image: blue-green-app:blue
@@ -11,3 +14,9 @@ services:
       - "3002:3000"
     environment:
       - APP_VERSION=v2
+  nginx:
+    image: nginx:latest
+    ports: 
+    - "8080:80"
+    volumes:
+    - ./nginx/conf.d:/etc/nginx/conf.d #local:remote

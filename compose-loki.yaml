@@ -1,0 +1,80 @@
+# Simple Loki Stack for Blue-Green Deployment
+
+services:
+  # Loki for log aggregation
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - monitoring
+
+  # Grafana for log visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - monitoring
+
+  # Your blue application with Loki logging
+  blue:
+    image: blue-green-app:loki
+    environment:
+      - APP_VERSION=v1
+      - SERVICE_NAME=blue-green-app
+      - ENVIRONMENT=blue
+      - LOKI_HOST=http://loki:3100
+    ports:
+      - "3001:3000"
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+      - app
+
+  # Your green application with Loki logging
+  green:
+    image: blue-green-app:loki
+    environment:
+      - APP_VERSION=v2
+      - SERVICE_NAME=blue-green-app
+      - ENVIRONMENT=green
+      - LOKI_HOST=http://loki:3100
+    ports:
+      - "3002:3000"
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+      - app
+
+  # Nginx load balancer
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - blue
+      - green
+    networks:
+      - app
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  monitoring:
+    driver: bridge
+  app:
+    driver: bridge

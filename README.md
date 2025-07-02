@@ -44,7 +44,14 @@ blue-green-deployment/
 
 ## Quick Start
 
-### 1. Build Application Images
+Choose your deployment strategy:
+
+**Option A: Basic Blue-Green** - Simple deployment with console logging
+**Option B: Full Observability** - Production-ready with Loki and Grafana
+
+### Option A: Basic Blue-Green Deployment
+
+#### 1. Build Application Images
 
 Build both blue and green versions of the application:
 
@@ -56,7 +63,7 @@ docker build -t blue-green-app:blue --build-arg APP_VERSION=v1 .
 docker build -t blue-green-app:green --build-arg APP_VERSION=v2 .
 ```
 
-### 2. Deploy with Docker Compose
+#### 2. Deploy with Docker Compose
 
 Launch all services (blue, green, and nginx proxy):
 
@@ -69,6 +76,29 @@ This will start:
 - **Blue service**: Available at `http://localhost:3001`
 - **Green service**: Available at `http://localhost:3002`
 - **Nginx proxy**: Available at `http://localhost:8080` (routes to green by default)
+
+### Option B: Full Observability Stack
+
+#### 1. Build with Loki Support
+
+```bash
+# Build image with advanced logging
+docker build -t blue-green-app:loki .
+```
+
+#### 2. Deploy Complete Stack
+
+```bash
+# Deploy with Loki, Grafana, and blue-green apps
+docker compose -f compose-loki.yaml up -d --build
+```
+
+This provides:
+
+- **Applications**: Blue/Green with structured logging
+- **Grafana**: Log visualization at `http://localhost:3000` (admin/admin)
+- **Loki**: Log aggregation at `http://localhost:3100`
+- **Load Balancer**: Nginx at `http://localhost:8080`
 
 ### 3. Test the Deployment
 
@@ -207,6 +237,9 @@ This blue-green deployment setup can be used for:
 - Feature toggles and gradual rollouts
 - Quick rollbacks when issues are detected
 - Load testing new versions safely
+- **Centralized logging and monitoring** (with Loki option)
+- **Real-time observability** across environments
+- **Request tracing** between blue and green instances
 
 ## Benefits
 
@@ -215,12 +248,115 @@ This blue-green deployment setup can be used for:
 - Easy Rollback: Switch back immediately if issues arise
 - Reduced Risk: Test in production-like environment
 - Parallel Testing: Run both versions simultaneously
+- **Observability**: Centralized logging and real-time monitoring
+- **Debugging**: Structured logs with environment labeling
+- **Performance Insights**: Request/response timing and metrics
+
+## Observability and Logging with Loki
+
+This project includes advanced logging capabilities using **Grafana Loki** for log aggregation and **Grafana** for visualization.
+
+### Features
+
+- **Structured JSON logging** with Winston
+- **Centralized log aggregation** with Loki
+- **Real-time log visualization** with Grafana
+- **Blue/Green environment labeling** for easy filtering
+- **Request/response middleware logging**
+- **Automatic service discovery** between containers
+
+### Option 1: Basic Deployment (Console Logging Only)
+
+For simple testing without centralized logging:
+
+```bash
+# Build images
+docker build -t blue-green-app:blue --build-arg APP_VERSION=v1 .
+docker build -t blue-green-app:green --build-arg APP_VERSION=v2 .
+
+# Deploy basic stack
+docker compose up -d
+```
+
+### Option 2: Full Observability Stack (Recommended)
+
+For production-like logging with Loki and Grafana:
+
+```bash
+# Build image with Loki support
+docker build -t blue-green-app:loki --build-arg APP_VERSION=v1 .
+
+# Deploy complete stack with logging
+docker compose -f compose-loki.yaml up -d --build
+```
+
+This will start:
+
+- **Loki**: Log aggregation at `http://localhost:3100`
+- **Grafana**: Log visualization at `http://localhost:3000` (admin/admin)
+- **Blue app**: With Loki logging at `http://localhost:3001`
+- **Green app**: With Loki logging at `http://localhost:3002`
+- **Nginx**: Load balancer at `http://localhost:8080`
+
+### Accessing Grafana
+
+1. Open `http://localhost:3000`
+2. Login with `admin` / `admin`
+3. Navigate to **Explore** → **Loki**
+4. Use queries like:
+
+   ```logql
+   # All logs from blue-green app
+   {app="blue-green-app"}
+   
+   # Only blue environment logs
+   {app="blue-green-app", environment="blue"}
+   
+   # Only HTTP requests
+   {app="blue-green-app"} |= "Request"
+   
+   # Error logs only
+   {app="blue-green-app"} | json | level="error"
+   ```
+
+### Log Structure
+
+Each log entry includes:
+
+```json
+{
+  "timestamp": "2025-07-02T11:26:17.474Z",
+  "level": "info",
+  "message": "Request completed",
+  "service": "blue-green-app",
+  "version": "v1",
+  "environment": "blue",
+  "method": "GET",
+  "url": "/",
+  "statusCode": 200,
+  "duration": "5ms"
+}
+```
+
+### Available Endpoints for Testing
+
+```bash
+# Health check
+curl http://localhost:8080/health
+
+# User endpoint with parameters
+curl http://localhost:8080/users/123
+
+# Error endpoint (generates error logs)
+curl http://localhost:8080/error
+
+# Root endpoint
+curl http://localhost:8080/
+```
 
 ## Learning Resources
 
 - [Martin Fowler's Blue-Green Deployment](https://martinfowler.com/bliki/BlueGreenDeployment.html)
 - [Docker Compose Networking](https://docs.docker.com/compose/networking/)
 - [Nginx Load Balancing](https://nginx.org/en/docs/http/load_balancing.html)
-
-
-https://roadmap.sh/projects/blue-green-deployment
+- [Blue-Green Deployment Project Guide](https://roadmap.sh/projects/blue-green-deployment)
